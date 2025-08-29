@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.inhouse.model.FileChunks.Chunk;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.inhouse.dto.FileChunkDTO;
 import com.inhouse.model.FileChunks;
 
 import redis.clients.jedis.Jedis;
@@ -21,10 +23,6 @@ public class BreakFilesService {
     private static final int REDIS_PORT = 6379;
     private static final String REDIS_LIST_KEY = "file_chunks_queue";
 
-    /**
-     * Private constructor to initialize the Jedis connection pool.
-     * Assumes Redis is running on localhost:6379.
-     */
     private BreakFilesService() {
         this.jedisPool = new JedisPool(REDIS_HOST, REDIS_PORT);
     }
@@ -43,6 +41,13 @@ public class BreakFilesService {
         return localInstance;
     }
 
+    /**
+     * Breaks each file in the input list into smaller chunks based on the specified breakPointByteSize.
+     * Each chunk is represented by its start and end byte positions.
+     * @param filesInput A list of file paths to be broken into chunks.
+     * @param breakPointByteSize The maximum size (in bytes) for each chunk.
+     * @return A list of FileChunks objects, each containing the file path and its corresponding chunks.
+     */
     public List<FileChunks> breakFiles(List<String> filesInput, long breakPointByteSize) {
 
         if (breakPointByteSize <= 0) {
@@ -95,15 +100,11 @@ public class BreakFilesService {
 
             for (FileChunks file : files) {
                 for (Chunk chunk : file.getChunks()) {
-                    // Create a JSON message for the worker. Escaping backslashes for Windows paths.
-                    String escapedPath = file.getFilePath().replace("\\", "\\\\");
-                    String message = String.format(
-                        "{\"filePath\": \"%s\", \"startByte\": %d, \"endByte\": %d}",
-                        escapedPath,
-                        chunk.getStartByte(),
-                        chunk.getEndByte()
-                    );
 
+                    //DTO to have each chunk with filepath in it in order to allow chunks from same file processed by multiple workers
+                    FileChunkDTO dto = new FileChunkDTO(file.getFilePath(), chunk.getStartByte(), chunk.getEndByte());
+                    //convert to JSON 
+                    String message = new ObjectMapper().writeValueAsString(dto);
                     // LPUSH adds the item to the head of the list. Workers can use RPOP to process in FIFO order.
                     jedis.lpush(REDIS_LIST_KEY, message);
                     System.out.println("Published chunk: " + message);

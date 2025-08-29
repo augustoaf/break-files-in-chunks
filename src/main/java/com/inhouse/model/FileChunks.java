@@ -3,9 +3,13 @@ package com.inhouse.model;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class FileChunks {
 
+    @JsonProperty("file_path")
     private String filePath;
+    @JsonProperty("chunks")
     private List<Chunk> chunks;
 
     public FileChunks(String filePath) {
@@ -40,7 +44,10 @@ public class FileChunks {
     }      
 
     public static class Chunk {
+
+        @JsonProperty("start_byte")
         private long startByte;
+        @JsonProperty("end_byte")
         private long endByte;
 
         public Chunk(long startByte, long endByte) {
