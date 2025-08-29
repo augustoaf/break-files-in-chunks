@@ -15,8 +15,10 @@ import com.inhouse.service.BreakFilesService;
 public class App 
 {
 
-    private static String folderToScan = "D:/repos/handle-files-in-scale/breakfiles/data/input";
-    
+    private static final String FOLDER_TO_SCAN = "D:\\repos\\handle-files-in-scale\\breakfiles\\inputs";
+    private static final String FILE_EXTENSION_IN_SCOPE = ".txt";
+    private static final long BREAK_POINT_BYTE_SIZE = 128 * 1024; // 128kb
+
     public static void main( String[] args )
     {
 
@@ -26,7 +28,7 @@ public class App
         List<String> files = getFiles();
         
         // break files into smaller chunks
-        List<FileChunks> filesOutput = breakFilesService.breakFiles(files, 1024);
+        List<FileChunks> filesOutput = breakFilesService.breakFiles(files, BREAK_POINT_BYTE_SIZE);
         
         // publish file chunks to a message broker or any other system for further processing
         breakFilesService.publishFileChuncks(filesOutput);
@@ -36,7 +38,7 @@ public class App
 
     private static List<String> getFiles() {
         // Define the folder to scan.
-        Path dir = Paths.get(folderToScan);
+        Path dir = Paths.get(FOLDER_TO_SCAN);
 
         if (!Files.isDirectory(dir)) {
             System.err.println("Directory not found: " + dir.toAbsolutePath());
@@ -48,7 +50,7 @@ public class App
             return stream
                     .filter(file -> !Files.isDirectory(file)) // Ensure it's a file, not a subdirectory.
                     .map(Path::toString) // Convert the Path object to its String representation.
-                    .filter(fileName -> fileName.endsWith(".txt")) // Filter for files ending with .txt.
+                    .filter(fileName -> fileName.endsWith(FILE_EXTENSION_IN_SCOPE)) // Filter for files ending with .txt.
                     .collect(Collectors.toList()); // Collect the results into a List.
         } catch (IOException e) {
             System.err.println("Error reading files from directory: " + dir.toAbsolutePath());

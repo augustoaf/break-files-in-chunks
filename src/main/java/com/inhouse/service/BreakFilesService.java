@@ -1,5 +1,9 @@
 package com.inhouse.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,17 +24,32 @@ public class BreakFilesService {
 
         List<FileChunks> filesOutput = new ArrayList<>();
 
-        for (String file: filesInput) {
+        for (String filePath : filesInput) {
+            try {
+                Path path = Paths.get(filePath);
+                long fileSize = Files.size(path);
 
-            System.out.println("Breaking file into smaller parts: " + file);
-        
-            FileChunks fileChunks = new FileChunks(file);
+                // Skip empty files
+                if (fileSize == 0) {
+                    System.out.println("Skipping empty file: " + filePath);
+                    continue;
+                }
 
-            // Dummy implementation, replace with actual logic to break file into chunks
-            fileChunks.addChunk(0, 1);
-            fileChunks.addChunk(2, 3);
+                System.out.println("Breaking file: " + filePath + " (Size: " + fileSize + " bytes)");
+                FileChunks fileChunks = new FileChunks(filePath);
 
-            filesOutput.add(fileChunks);
+                // Loop through the file, creating chunks based on the breakPointByteSize
+                for (long startByte = 0; startByte < fileSize; startByte += breakPointByteSize) {
+                    // Calculate the end byte, ensuring it doesn't go past the end of the file
+                    long endByte = Math.min(startByte + breakPointByteSize - 1, fileSize - 1);
+                    fileChunks.addChunk(startByte, endByte);
+                }
+                filesOutput.add(fileChunks);
+
+            } catch (IOException e) {
+                System.err.println("Error processing file " + filePath + ": " + e.getMessage());
+                // Continue to the next file on error
+            }
         }
 
         return filesOutput;
