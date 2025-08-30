@@ -10,7 +10,6 @@ This project addresses the challenge of processing very large files by dividing 
 
 -   **File Chunking**: Splits files into logical chunks based on a specified byte size.
 -   **Redis Integration**: Publishes chunk metadata to a Redis list using the Redisson client.
--   **JSON-based Messaging**: Serializes chunk data into JSON format
 
 ## Prerequisites
 
@@ -21,25 +20,13 @@ This project addresses the challenge of processing very large files by dividing 
 ## How to Run
 
 1.  **Clone the repository:**
-    ```sh
-    git clone <repository-url>
-    cd breakfiles
-    ```
-
+    
 2.  **Place files for processing:**
-    Create an `inputs` directory in the project root and place the large files you want to process inside it.
-    ```sh
-    mkdir inputs
-    cp /path/to/your/largefile.dat inputs/
-    ```
+    Create an `inputs` directory in the project root and place the large files you want to process inside it, then configure the path to the files in FOLDER_TO_SCAN variable inside `App.java`.
 
-3.  **Configure Redis (Optional):**
-    By default, the application tries to connect to Redis at `localhost:6379`. If your Redis instance is running elsewhere, you can modify the connection details in `src/main/java/com/inhouse/service/BreakFilesService.java`:
-    ```java
-    private static final String REDIS_HOST = "your-redis-host";
-    private static final int REDIS_PORT = 6379;
-    ```
-
+3.  **Start the applicationRedis:**
+    By default, the application tries to connect to Redis at `localhost:6379`. If your Redis instance is running elsewhere, you can modify the connection details in `src/main/java/com/inhouse/service/BreakFilesService.java`.
+    
 4.  **Build the project:**
     ```sh
     mvn clean package

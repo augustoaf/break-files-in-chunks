@@ -21,7 +21,8 @@ public class App
 
     public static void main( String[] args )
     {
-
+        System.out.println( "STARTING BREAK AND PUBLISH..." );
+        
         BreakFilesService breakFilesService = BreakFilesService.getInstance();
 
         // list all files to be broken
@@ -35,7 +36,7 @@ public class App
 
         breakFilesService.releaseResources();
         
-        System.out.println( "completed!" );
+        System.out.println( "BREAK AND PUBLISH COMPLETE" );
     }
 
     private static List<String> getFiles() {
