@@ -7,24 +7,31 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.redisson.Redisson;
+import org.redisson.api.RQueue;
+import org.redisson.api.RedissonClient;
+import org.redisson.codec.JsonJacksonCodec;
+import org.redisson.config.Config;
+
 import com.inhouse.model.FileChunks.Chunk;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.inhouse.dto.FileChunkDTO;
 import com.inhouse.model.FileChunks;
-
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
 
 public class BreakFilesService {
 
     private static volatile BreakFilesService instance;
-    private final JedisPool jedisPool;
+    private final RedissonClient redissonClient;
     private static final String REDIS_HOST = "localhost";
     private static final int REDIS_PORT = 6379;
     private static final String REDIS_LIST_KEY = "file_chunks_queue";
 
     private BreakFilesService() {
-        this.jedisPool = new JedisPool(REDIS_HOST, REDIS_PORT);
+        Config config = new Config();
+        config.useSingleServer()
+              .setAddress("redis://" + REDIS_HOST + ":" + REDIS_PORT);
+        config.setCodec(new JsonJacksonCodec()); 
+
+        this.redissonClient = Redisson.create(config);
     }
 
     public static BreakFilesService getInstance() {
@@ -89,35 +96,32 @@ public class BreakFilesService {
 
     /**
      * Publishes each file chunk as a separate message to a Redis list.
-     * Each message is a JSON string containing the file path, start byte, and end byte.
+     * Each message is a JSON containing the file path, start byte, and end byte.
      * @param files A list of FileChunks objects to be published.
      */
     public void publishFileChuncks(List<FileChunks> files) {
-        // Use try-with-resources to automatically return the connection to the pool.
-        try (Jedis jedis = jedisPool.getResource()) {
-            System.out.println("Publishing file chunks to Redis list '" + REDIS_LIST_KEY + "'...");
-            int chunksPublished = 0;
+        
+        RQueue<FileChunkDTO> queue = redissonClient.getQueue(REDIS_LIST_KEY);
+        
+        System.out.println("Publishing file chunks to Redis list '" + REDIS_LIST_KEY + "'...");
+        int chunksPublished = 0;
 
-            for (FileChunks file : files) {
-                for (Chunk chunk : file.getChunks()) {
+        for (FileChunks file : files) {
+            for (Chunk chunk : file.getChunks()) {
 
-                    //DTO to have each chunk with filepath in it in order to allow chunks from same file processed by multiple workers
-                    FileChunkDTO dto = new FileChunkDTO(file.getFilePath(), chunk.getStartByte(), chunk.getEndByte());
-                    //convert to JSON 
-                    String message = new ObjectMapper().writeValueAsString(dto);
-                    // LPUSH adds the item to the head of the list. Workers can use RPOP to process in FIFO order.
-                    jedis.lpush(REDIS_LIST_KEY, message);
-                    System.out.println("Published chunk: " + message);
-                    chunksPublished++;
-                }
+                FileChunkDTO dto = new FileChunkDTO(file.getFilePath(), chunk.getStartByte(), chunk.getEndByte());
+                queue.add(dto); 
+                
+                System.out.println("Published chunk: " + dto.toString());
+                chunksPublished++;
             }
-            System.out.println("Successfully published " + chunksPublished + " chunks to Redis.");
-        } catch (Exception e) {
-            System.err.println("Could not publish to Redis. Is Redis running? Error: " + e.getMessage());
         }
+        System.out.println("Successfully published " + chunksPublished + " chunks to Redis.");
     }
 
-    public void close() {
-        jedisPool.close();
+    public void releaseResources() {
+        if (this.redissonClient != null && !this.redissonClient.isShutdown()) {
+            this.redissonClient.shutdown();
+        }
     }
 }

@@ -30,8 +30,10 @@ public class App
         // break files into smaller chunks
         List<FileChunks> filesOutput = breakFilesService.breakFiles(files, BREAK_POINT_BYTE_SIZE);
         
-        // publish file chunks to a message broker or any other system for further processing
+        // publish file chunks to a message broker or any other system for async and scalable processing
         breakFilesService.publishFileChuncks(filesOutput);
+
+        breakFilesService.releaseResources();
         
         System.out.println( "completed!" );
     }
@@ -48,9 +50,9 @@ public class App
         // Use try-with-resources to ensure the stream is closed, preventing resource leaks.
         try (Stream<Path> stream = Files.list(dir)) {
             return stream
-                    .filter(file -> !Files.isDirectory(file)) // Ensure it's a file, not a subdirectory.
+                    .filter(file -> !Files.isDirectory(file)) // file only
                     .map(Path::toString) // Convert the Path object to its String representation.
-                    .filter(fileName -> fileName.endsWith(FILE_EXTENSION_IN_SCOPE)) // Filter for files ending with .txt.
+                    .filter(fileName -> fileName.endsWith(FILE_EXTENSION_IN_SCOPE)) // Filter for .txt files.
                     .collect(Collectors.toList()); // Collect the results into a List.
         } catch (IOException e) {
             System.err.println("Error reading files from directory: " + dir.toAbsolutePath());

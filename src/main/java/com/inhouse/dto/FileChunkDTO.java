@@ -26,4 +26,8 @@ public class FileChunkDTO {
     public long getEndByte() {
         return endByte;
     }
+
+    public String toString() {
+        return "FileChunkDTO [filePath=" + filePath + ", startByte=" + startByte + ", endByte=" + endByte + "]";
+    }
 }
