@@ -17,7 +17,8 @@ public class App
 
     private static final String FOLDER_TO_SCAN = "D:\\repos\\handle-files-in-scale\\breakfiles\\inputs";
     private static final String FILE_EXTENSION_IN_SCOPE = ".txt";
-    private static final long BREAK_POINT_BYTE_SIZE = 128 * 1024; // 128kb
+    //private static final long BREAK_POINT_BYTE_SIZE = 128 * 1024; // 128kb
+    private static final long BREAK_POINT_BYTE_SIZE = 128 * 1024 * 8; // 1024kb
 
     public static void main( String[] args )
     {
